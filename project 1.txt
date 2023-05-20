@@ -1,0 +1,101 @@
+import java.util.HashMap;
+import java.util.Map;
+import java.util.PriorityQueue;
+
+class HuffmanNode implements Comparable<HuffmanNode> {
+    char value;
+    int frequency;
+    HuffmanNode left;
+    HuffmanNode right;
+
+    public HuffmanNode(char value, int frequency) {
+        this.value = value;
+        this.frequency = frequency;
+    }
+
+    @Override
+    public int compareTo(HuffmanNode other) {
+        return Integer.compare(this.frequency, other.frequency);
+    }
+}
+
+public class HuffmanCompression {
+
+    public static Map<Character, String> buildEncodingTable(String data) {
+        Map<Character, Integer> frequencyTable = buildFrequencyTable(data);
+        HuffmanNode root = buildHuffmanTree(frequencyTable);
+        Map<Character, String> encodingTable = new HashMap<>();
+        buildEncodingTableHelper(root, "", encodingTable);
+        return encodingTable;
+    }
+
+    private static Map<Character, Integer> buildFrequencyTable(String data) {
+        Map<Character, Integer> frequencyTable = new HashMap<>();
+        for (char c : data.toCharArray()) {
+            frequencyTable.put(c, frequencyTable.getOrDefault(c, 0) + 1);
+        }
+        return frequencyTable;
+    }
+
+    private static HuffmanNode buildHuffmanTree(Map<Character, Integer> frequencyTable) {
+        PriorityQueue<HuffmanNode> priorityQueue = new PriorityQueue<>();
+        for (Map.Entry<Character, Integer> entry : frequencyTable.entrySet()) {
+            HuffmanNode node = new HuffmanNode(entry.getKey(), entry.getValue());
+            priorityQueue.offer(node);
+        }
+
+        while (priorityQueue.size() > 1) {
+            HuffmanNode leftNode = priorityQueue.poll();
+            HuffmanNode rightNode = priorityQueue.poll();
+            HuffmanNode combinedNode = new HuffmanNode('\0', leftNode.frequency + rightNode.frequency);
+            combinedNode.left = leftNode;
+            combinedNode.right = rightNode;
+            priorityQueue.offer(combinedNode);
+        }
+
+        return priorityQueue.poll();
+    }
+
+    private static void buildEncodingTableHelper(HuffmanNode node, String code, Map<Character, String> encodingTable) {
+        if (node.value != '\0') {
+            encodingTable.put(node.value, code);
+        } else {
+            buildEncodingTableHelper(node.left, code + "0", encodingTable);
+            buildEncodingTableHelper(node.right, code + "1", encodingTable);
+        }
+    }
+
+    public static String compress(String data) {
+        Map<Character, String> encodingTable = buildEncodingTable(data);
+        StringBuilder compressedData = new StringBuilder();
+        for (char c : data.toCharArray()) {
+            compressedData.append(encodingTable.get(c));
+        }
+        return compressedData.toString();
+    }
+
+    public static String decompress(String compressedData, HuffmanNode root) {
+        StringBuilder decompressedData = new StringBuilder();
+        HuffmanNode current = root;
+        for (char c : compressedData.toCharArray()) {
+            if (c == '0') {
+                current = current.left;
+            } else if (c == '1') {
+                current = current.right;
+            }
+            if (current.value != '\0') {
+                decompressedData.append(current.value);
+                current = root;
+            }
+        }
+        return decompressedData.toString();
+    }
+
+    public static void main(String[] args) {
+        String data = "Hello, world!";
+        String compressedData = compress(data);
+        System.out.println("Compressed data: " + compressedData);
+        String decompressedData = decompress(compressedData, buildHuffmanTree(buildFrequencyTable(data)));
+        System.out.println("Decompressed data: " + decompressedData);
+    }
+}
